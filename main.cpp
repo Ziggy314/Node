@@ -5,48 +5,35 @@
 #include <type_traits>
 #include <functional>
 #include "headers/Node.hpp"
+#include "headers/NodePack.hpp"
+#include "headers/Resources.hpp"
+#include <any>
 
-class IAccesble;
-class TestNode;
 
 
-class Resources
-{
-};
 
 class IAccesble
 {
-    virtual void accept(DataAccessor&) = 0;
+    virtual void accept(NodeAccessor) = 0;
 };
-
 
 struct TestNode : public IAccesble
 {
+    TestNode(int i)//:_i(std::make_unique<int>(i))
+    {}
     
-    TestNode(int i):
-        _i(std::make_unique<int>(i))
-    {
-        std::cout << "TestNode::Ctor" <<std::endl;
-    }
+    TestNode(const TestNode&) = default;
 
-    TestNode(const TestNode&) = delete;
-
-    TestNode(TestNode&& i) noexcept:
-        _i(std::move(i._i))
-    {
-        std::cout << "TestNode::move" <<std::endl;
-    }
+    TestNode(TestNode&& i) noexcept//:_i(std::move(i._i))
+    { }
 
     TestNode& operator=(const TestNode& u) = delete;
 
     TestNode& operator=(TestNode&& u) = delete;
 
-    ~TestNode()
-    {
-        std::cout << "TestNode::dtor" <<std::endl;
-    }
+    ~TestNode() = default;
 
-    void accept(DataAccessor& a)
+    void accept(NodeAccessor a)
     {
         a.Acess(*this);
     }
@@ -56,42 +43,60 @@ struct TestNode : public IAccesble
         std::cout << "u = " << t <<std::endl;
     }
 
+    void test()
+    {
+        std::cout << "TestNode::test" <<std::endl;
+    }
 
-    std::unique_ptr<int> _i;
+    //std::unique_ptr<int> _i; // to jest tylko testowa zmienna żeby sprawdzić czy dane się dobrze przenoszą 
 };
 
 
-
-class NodePack: std::vector<Node<Resources>>
+template<>
+struct ConcreteVisitor<std::shared_ptr<TestNode>>
 {
-    typedef std::vector<Node<Resources>> Base;
-    public:
+    void operator()(TestNode& tn)
+    {
+        tn.test();
+        std::cout << "no jestem ciekaw" << std::endl;
 
-    using Base::push_back;
-    using Base::operator[];
+    }
 
-    void update(double t, Resources res) {
-        for (auto& x: *this)
-            x.update(t, res);
+    void operator()(std::weak_ptr<TestNode> sp)
+    {
+        std::cout << "a to z sp" << std::endl;
     }
 };
 
 
+
+
+
+using TestNodeVisitor = ConcreteVisitor<TestNode>;
+
+TestNodeVisitor cv;
+
 int main()
 {
     {
-        DataAccessor a;
-        NodePack v;
-        {
 
-            v.push_back(TestNode(3));
-            v.push_back(std::make_shared<TestNode>(0));
 
-            v[0].accept(a);
-        }
+        Node<Resources> n(std::make_shared<TestNode>(0));
+        NodeAccessor a = cv;
+        n.accept(a);
+
+        // NodePack v;
+        // {
+        //     //v.push_back(TestNode(3));
+        //     v.push_back(std::make_shared<TestNode>(0));
+
+        //     NodeAccessor a = cv;
+        //     v[0].accept(cv);
+        //     //v[1].accept(cv);
+        // }
         
-        Resources res;
-        v.update(0.0, res);
+        // Resources res;
+        // v.update(0.0, res);
 
     }
 

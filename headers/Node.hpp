@@ -2,14 +2,36 @@
 #pragma once
 
 #include <memory>
+#include <iostream>
+#include <any>
 
-struct DataAccessor
+template<typename T>
+struct ConcreteVisitor
+{
+    template<typename VisitedT>
+    void operator()(VisitedT& )
+    {
+        std::cout << "tu nie" <<std::endl;
+    }
+};
+
+struct NodeAccessor
 {
     template<typename T>
-    void Acess(T& t)
+    void Acess(T t)
     {
+        std::any an = t;
+        std::cout << an.type().name() << std::endl;
+        (*reinterpret_cast<ConcreteVisitor<T>*>(xxx))(t);
     }
 
+    template<typename VisitorT>
+    NodeAccessor(VisitorT& accesor):
+       xxx(&accesor)
+    {}
+
+    void* xxx;
+    //std::any _any;
     // tu jest problem bo trzeba dodawać funkcje dla każdego nowego typu
 };
 
@@ -43,8 +65,8 @@ namespace nodeImpl_
         inline std::shared_ptr<T> operator->() {
             return t_;
         }
-        inline T& operator*(){
-            return *t_.get();
+        inline std::shared_ptr<T> operator*(){
+            return t_;
         }
     };
 
@@ -89,14 +111,14 @@ void update(double t, ResourceT res) {
    ptrToNode_->update(t, res);
 } 
 
-void accept(DataAccessor& a) {
+void accept(NodeAccessor a) {
     ptrToNode_->accept(a);
 }
 
 private:
 struct NodeBase {
     virtual void update(double, ResourceT) = 0;
-    virtual void accept(DataAccessor&) = 0;
+    virtual void accept(NodeAccessor&) = 0;
     virtual std::unique_ptr<NodeBase> copy_() = 0;
     virtual ~NodeBase() = default;
 };
@@ -123,7 +145,7 @@ struct NodeOwner final:
         nodeImpl_::ConvertToPtr(node_)->update(t, res);
     }
 
-    void accept(DataAccessor& a) override {
+    void accept(NodeAccessor& a) override {
         a.Acess(*nodeImpl_::ToPtr<ObjType>(node_));
     }
 private:
