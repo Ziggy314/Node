@@ -10,6 +10,8 @@
 #include <any>
 
 
+#include <benchmark/benchmark.h>
+
 
 
 class IAccesble
@@ -57,7 +59,7 @@ struct ConcreteVisitor<std::shared_ptr<TestNode>>
 {
     void operator()(std::weak_ptr<TestNode> sp)
     {
-        std::cout << "a to z sp" << std::endl;
+        //std::cout << "a to z sp" << std::endl;
     }
 };
 using TestNodeSpVisitor = ConcreteVisitor<std::shared_ptr<TestNode>>;
@@ -67,7 +69,7 @@ struct ConcreteVisitor<TestNode>
 {
     void operator()(TestNode& tn)
     {
-        std::cout << "TestNode visitor" << std::endl;
+        //std::cout << "TestNode visitor" << std::endl;
     }
 };
 using TestNodeVisitor = ConcreteVisitor<TestNode>;
@@ -76,34 +78,62 @@ using TestNodeVisitor = ConcreteVisitor<TestNode>;
 TestNodeVisitor nodeVisitor;
 TestNodeSpVisitor spNodeVisitor;
 
-int main()
-{
-    NodeAccessor accessor1 = spNodeVisitor;
-    NodeAccessor accessor2 = nodeVisitor;
-    auto tn = std::make_shared< TestNode>(2);
+
+static void BM_executeByval(benchmark::State& state) {
+    NodeAccessor accessor = nodeVisitor;
+    Node<Resources> node(TestNode(2));
+    for (auto _ : state)
+    {
+        node.accept(accessor);
+    }
+}
+// Register the function as a benchmark
+BENCHMARK(BM_executeByval);
+
+
+static void BM_executeSp(benchmark::State& state) {
+    NodeAccessor accessor = spNodeVisitor;
+    auto tn = std::make_shared<TestNode>(2);
     Node<Resources> node1(tn);
-    Node<Resources> node2(TestNode(2));
-    node1.accept(accessor1);
-    node2.accept(accessor2);
+    for (auto _ : state)
+    {
+        node1.accept(accessor);
+    }
+}
+BENCHMARK(BM_executeSp);
+
+
+BENCHMARK_MAIN();
+
+
+// int main()
+// {
+//     NodeAccessor accessor1 = spNodeVisitor;
+//     NodeAccessor accessor2 = nodeVisitor;
+//     auto tn = std::make_shared< TestNode>(2);
+//     Node<Resources> node1(tn);
+//     Node<Resources> node2(TestNode(2));
+//     node1.accept(accessor1);
+//     node2.accept(accessor2);
     
 
 
-    // {
-    //     NodePack v;
-    //     {
-    //         v.push_back(TestNode(3));
-    //         v.push_back(std::make_shared<TestNode>(0));
+//     // {
+//     //     NodePack v;
+//     //     {
+//     //         v.push_back(TestNode(3));
+//     //         v.push_back(std::make_shared<TestNode>(0));
 
-    //         NodeAccessor na = nodeVisitor;
-    //         v[0].accept(na);
-    //         v[1].accept(na);
-    //     }
+//     //         NodeAccessor na = nodeVisitor;
+//     //         v[0].accept(na);
+//     //         v[1].accept(na);
+//     //     }
         
-    //     Resources res;
-    //     v.update(0.0, res);
+//     //     Resources res;
+//     //     v.update(0.0, res);
 
-    // }
+//     // }
 
-    std::cin.get();
-    return 0;
-}
+//     std::cin.get();
+//     return 0;
+// }

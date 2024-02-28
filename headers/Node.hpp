@@ -6,31 +6,30 @@
 #include <any>
 
 template<typename T>
-struct ConcreteVisitor
-{
-    template<typename VisitedT>
-    void operator()(VisitedT& )
-    {
-        std::cout << "tu nie" <<std::endl;
-    }
-};
+struct ConcreteVisitor;
 
 struct NodeAccessor
 {
-    template<typename T>
-    void Acess(T& t)
-    {
-        (*reinterpret_cast<ConcreteVisitor<T>*>(_any))(t);
+    template<typename VisitedNodeT>
+    void Acess(VisitedNodeT& t)
+    {   
+        try
+        {
+            auto visitor = std::any_cast<ConcreteVisitor<VisitedNodeT>*>(_any);
+            (*visitor)(t);
+        }
+        catch (std::bad_any_cast const& ex)
+        {
+            std::cout << ex.what() << '\n';
+        }
     }
 
     template<typename VisitorT>
     NodeAccessor(VisitorT& accesor):
-       _any(&accesor)
+       _any(std::make_any<VisitorT*>(&accesor))
     {}
-
-    void* _any;
-    
-    // tu jest problem bo trzeba dodawać funkcje dla każdego nowego typu
+private:
+    std::any _any;
 };
 
 
@@ -74,13 +73,6 @@ namespace nodeImpl_
     {
         return ToPtr<T>(t).operator->();
     }
-
-    //to do fix it
-    // template<typename T>
-    // auto ConvertToRef(T& t) 
-    // {
-    //     return ToPtr<T>(t).operator*();
-    // }
 
 }//~ namespace nodeImpl_
 
