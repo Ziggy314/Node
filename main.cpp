@@ -8,6 +8,7 @@
 #include "headers/NodePack.hpp"
 #include "headers/Resources.hpp"
 #include <any>
+#include <thread>
 
 
 #include <benchmark/benchmark.h>
@@ -47,6 +48,7 @@ struct TestNode : public IAccesble
 
     void test()
     {
+        //std::this_thread::sleep_for(std::chrono::milliseconds(1));
         std::cout << "TestNode::test" <<std::endl;
     }
 
@@ -59,24 +61,38 @@ struct ConcreteVisitor<std::shared_ptr<TestNode>>
 {
     void operator()(std::weak_ptr<TestNode> sp)
     {
+        sp.lock()->test();
         //std::cout << "a to z sp" << std::endl;
     }
 };
 using TestNodeSpVisitor = ConcreteVisitor<std::shared_ptr<TestNode>>;
 
 template<>
+struct ConcreteVisitor<std::unique_ptr<TestNode>>
+{
+    void operator()(std::unique_ptr<TestNode>& sp)
+    {
+        sp->test();
+        //std::cout << "a to z sp" << std::endl;
+    }
+};
+using TestNodeUnVisitor = ConcreteVisitor<std::unique_ptr<TestNode>>;
+
+
+
+template<>
 struct ConcreteVisitor<TestNode>
 {
     void operator()(TestNode& tn)
     {
-        //std::cout << "TestNode visitor" << std::endl;
+        tn.test();
     }
 };
 using TestNodeVisitor = ConcreteVisitor<TestNode>;
 
-
 TestNodeVisitor nodeVisitor;
 TestNodeSpVisitor spNodeVisitor;
+TestNodeUnVisitor testNodeUnVisitor;
 
 
 static void BM_executeByval(benchmark::State& state) {
@@ -87,8 +103,6 @@ static void BM_executeByval(benchmark::State& state) {
         node.accept(accessor);
     }
 }
-// Register the function as a benchmark
-BENCHMARK(BM_executeByval);
 
 
 static void BM_executeSp(benchmark::State& state) {
@@ -100,40 +114,40 @@ static void BM_executeSp(benchmark::State& state) {
         node1.accept(accessor);
     }
 }
-BENCHMARK(BM_executeSp);
+BENCHMARK(BM_executeByval)->Iterations(1000000);;
+BENCHMARK(BM_executeSp)->Iterations(1000000);
 
 
-BENCHMARK_MAIN();
+//BENCHMARK_MAIN();
 
 
-// int main()
-// {
-//     NodeAccessor accessor1 = spNodeVisitor;
-//     NodeAccessor accessor2 = nodeVisitor;
-//     auto tn = std::make_shared< TestNode>(2);
-//     Node<Resources> node1(tn);
-//     Node<Resources> node2(TestNode(2));
-//     node1.accept(accessor1);
-//     node2.accept(accessor2);
+int main()
+{
+    NodeAccessor accessor1 = testNodeUnVisitor;
+    NodeAccessor accessor2 = nodeVisitor;
+    auto tn = std::make_shared< TestNode>(2);
+    Node<Resources> node1(std::make_unique<TestNode>(4));
+    Node<Resources> node2(TestNode(2));
+    node1.accept(accessor1);
+    node2.accept(accessor2);
     
 
+    // {
+    //     NodePack v;
+    //     {
+    //         v.push_back(TestNode(3));
+    //         v.push_back(std::make_shared<TestNode>(0));
 
-//     // {
-//     //     NodePack v;
-//     //     {
-//     //         v.push_back(TestNode(3));
-//     //         v.push_back(std::make_shared<TestNode>(0));
-
-//     //         NodeAccessor na = nodeVisitor;
-//     //         v[0].accept(na);
-//     //         v[1].accept(na);
-//     //     }
+    //         NodeAccessor na = nodeVisitor;
+    //         v[0].accept(na);
+    //         v[1].accept(na);
+    //     }
         
-//     //     Resources res;
-//     //     v.update(0.0, res);
+    //     Resources res;
+    //     v.update(0.0, res);
 
-//     // }
+    // }
 
-//     std::cin.get();
-//     return 0;
-// }
+    std::cin.get();
+    return 0;
+}

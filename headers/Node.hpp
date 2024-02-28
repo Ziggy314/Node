@@ -48,10 +48,6 @@ namespace nodeImpl_
         inline T* operator->() {
             return &t_;
         }
-
-        inline T& operator*(){
-            return t_;
-        }
     };
 
     template <typename T>
@@ -62,8 +58,15 @@ namespace nodeImpl_
         inline std::shared_ptr<T> operator->() {
             return t_;
         }
-        inline std::shared_ptr<T> operator*(){
-            return t_;
+    };
+
+    template <typename T>
+    struct ToPtr<std::unique_ptr<T>> {
+        std::unique_ptr<T>& t_;
+        ToPtr(std::unique_ptr<T>& t) noexcept:t_(t){}
+
+        inline T* operator->() {
+            return t_.get();
         }
     };
 
