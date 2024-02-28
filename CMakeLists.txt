@@ -13,7 +13,10 @@ find_package(benchmark REQUIRED)
 
 
 set(CMAKE_BUILD_TYPE Debug)
-include_directories(/headers)
+include_directories(
+    /NodeImpl
+    /Nodes
+    )
 add_executable ( Node main.cpp )
 
 target_link_libraries(Node benchmark::benchmark)
