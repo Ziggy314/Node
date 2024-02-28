@@ -14,7 +14,7 @@
 
 class IAccesble
 {
-    virtual void accept(NodeAccessor) = 0;
+    virtual void accept(NodeAccessor&) = 0;
 };
 
 struct TestNode : public IAccesble
@@ -33,7 +33,7 @@ struct TestNode : public IAccesble
 
     ~TestNode() = default;
 
-    void accept(NodeAccessor a)
+    void accept(NodeAccessor& a)
     {
         a.Acess(*this);
     }
@@ -55,50 +55,54 @@ struct TestNode : public IAccesble
 template<>
 struct ConcreteVisitor<std::shared_ptr<TestNode>>
 {
-    void operator()(TestNode& tn)
-    {
-        tn.test();
-        std::cout << "no jestem ciekaw" << std::endl;
-
-    }
-
     void operator()(std::weak_ptr<TestNode> sp)
     {
         std::cout << "a to z sp" << std::endl;
     }
 };
+using TestNodeSpVisitor = ConcreteVisitor<std::shared_ptr<TestNode>>;
 
-
-
-
-
+template<>
+struct ConcreteVisitor<TestNode>
+{
+    void operator()(TestNode& tn)
+    {
+        std::cout << "TestNode visitor" << std::endl;
+    }
+};
 using TestNodeVisitor = ConcreteVisitor<TestNode>;
 
-TestNodeVisitor cv;
+
+TestNodeVisitor nodeVisitor;
+TestNodeSpVisitor spNodeVisitor;
 
 int main()
 {
-    {
+    NodeAccessor accessor1 = spNodeVisitor;
+    NodeAccessor accessor2 = nodeVisitor;
+    auto tn = std::make_shared< TestNode>(2);
+    Node<Resources> node1(tn);
+    Node<Resources> node2(TestNode(2));
+    node1.accept(accessor1);
+    node2.accept(accessor2);
+    
 
 
-        Node<Resources> n(std::make_shared<TestNode>(0));
-        NodeAccessor a = cv;
-        n.accept(a);
+    // {
+    //     NodePack v;
+    //     {
+    //         v.push_back(TestNode(3));
+    //         v.push_back(std::make_shared<TestNode>(0));
 
-        // NodePack v;
-        // {
-        //     //v.push_back(TestNode(3));
-        //     v.push_back(std::make_shared<TestNode>(0));
-
-        //     NodeAccessor a = cv;
-        //     v[0].accept(cv);
-        //     //v[1].accept(cv);
-        // }
+    //         NodeAccessor na = nodeVisitor;
+    //         v[0].accept(na);
+    //         v[1].accept(na);
+    //     }
         
-        // Resources res;
-        // v.update(0.0, res);
+    //     Resources res;
+    //     v.update(0.0, res);
 
-    }
+    // }
 
     std::cin.get();
     return 0;

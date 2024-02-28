@@ -18,20 +18,18 @@ struct ConcreteVisitor
 struct NodeAccessor
 {
     template<typename T>
-    void Acess(T t)
+    void Acess(T& t)
     {
-        std::any an = t;
-        std::cout << an.type().name() << std::endl;
-        (*reinterpret_cast<ConcreteVisitor<T>*>(xxx))(t);
+        (*reinterpret_cast<ConcreteVisitor<T>*>(_any))(t);
     }
 
     template<typename VisitorT>
     NodeAccessor(VisitorT& accesor):
-       xxx(&accesor)
+       _any(&accesor)
     {}
 
-    void* xxx;
-    //std::any _any;
+    void* _any;
+    
     // tu jest problem bo trzeba dodawać funkcje dla każdego nowego typu
 };
 
@@ -111,7 +109,7 @@ void update(double t, ResourceT res) {
    ptrToNode_->update(t, res);
 } 
 
-void accept(NodeAccessor a) {
+void accept(NodeAccessor& a) {
     ptrToNode_->accept(a);
 }
 
@@ -146,7 +144,7 @@ struct NodeOwner final:
     }
 
     void accept(NodeAccessor& a) override {
-        a.Acess(*nodeImpl_::ToPtr<ObjType>(node_));
+        a.Acess(node_);
     }
 private:
     ObjType node_;
